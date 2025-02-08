@@ -1,0 +1,76 @@
+#define BUZZER_PIN 21
+#define BUTTON_PIN 22
+
+// ระดับความเร็วที่กำหนด
+float speedLevels[] = {0.25, 0.5, 1, 2, 4};
+int speedIndex = 0; // เริ่มต้นที่ระดับ 0.25x
+
+bool isPlaying = false; // สถานะว่ากำลังเล่นอยู่หรือไม่
+
+int lastButtonState = HIGH;
+bool buttonPressed = false;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50; // เพิ่ม debounce เป็น 50ms
+
+// โน้ตเพลง Twinkle Twinkle Little Star
+int notes[] = {262, 262, 392, 392, 440, 440, 392,
+               349, 349, 330, 330, 294, 294, 262};
+int durations[] = {500, 500, 500, 500, 500, 500, 1000,
+                   500, 500, 500, 500, 500, 500, 1000};
+
+void setup() {
+  pinMode(BUZZER_PIN, OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // ใช้ Pull-up เพื่อลดสัญญาณรบกวน
+}
+
+void playNote(int frequency, int duration) {
+  float speed = speedLevels[speedIndex]; // ใช้ค่าความเร็วตามระดับที่เลือก
+  int adjustedDuration = duration / speed;
+
+  if (frequency == 0) {
+    delay(adjustedDuration);
+  } else {
+    int period = 1000000 / frequency;
+    int cycles = (adjustedDuration * 1000) / period;
+    for (int i = 0; i < cycles; i++) {
+      digitalWrite(BUZZER_PIN, HIGH);
+      delayMicroseconds(period / 2);
+      digitalWrite(BUZZER_PIN, LOW);
+      delayMicroseconds(period / 2);
+    }
+  }
+}
+
+void checkButtonPress() {
+  int reading = digitalRead(BUTTON_PIN);
+
+  if (reading == LOW && lastButtonState == HIGH) {
+    if (millis() - lastDebounceTime > debounceDelay) {
+      buttonPressed = true;
+      lastDebounceTime = millis();
+    }
+  }
+  lastButtonState = reading;
+}
+
+void loop() {
+  checkButtonPress(); // ตรวจสอบว่าปุ่มถูกกดหรือไม่
+
+  if (buttonPressed) {
+    buttonPressed = false; // รีเซ็ตสถานะปุ่ม
+
+    if (!isPlaying) {
+      isPlaying = true; // เริ่มเล่นเพลง
+    } 
+  }
+
+  if (isPlaying) {
+    for (int i = 0; i < sizeof(notes) / sizeof(notes[0]); i++) {
+      playNote(notes[i], durations[i]);
+      delay(50 / speedLevels[speedIndex]); // พักโน้ตตามความเร็วที่เลือก
+    }
+
+    isPlaying = false; // หยุดเล่นเพลงหลังจากเล่นครบ 1 รอบ
+    speedIndex = (speedIndex + 1) % 5; // เปลี่ยนระดับความเร็วเมื่อเพลงหยุดเล่นแล้ว
+  }
+}
