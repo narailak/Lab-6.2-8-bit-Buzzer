@@ -18,7 +18,6 @@ void IRAM_ATTR toggleBuzzer() {
     state = !state;
     digitalWrite(BUZZER_PIN, state);
 }
-//ตรวจด้วย logic analyzer
 void IRAM_ATTR changeSpeed() {
     unsigned long currentTime = millis();
     if (currentTime - lastPressTime > 1000) { 
